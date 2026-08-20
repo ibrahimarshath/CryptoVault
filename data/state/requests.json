@@ -1,22 +1,12 @@
 [
   {
-    "request_id": "d2e66d18-9f3c-4dd7-9bfd-2705fe03bf4f",
-    "from_address": "7047175424",
+    "request_id": "b82273b5-65a6-4c7d-8345-e77563f382cc",
+    "from_address": "CV-1340779961",
     "from_name": "Alice",
-    "to_address": "7209961765",
+    "to_address": "CV-2649983308",
     "to_name": "Bob",
     "amount": 30,
     "status": "accepted",
-    "created_at": "2026-08-20T05:22:44Z"
-  },
-  {
-    "request_id": "a90c74af-394b-43be-bd55-5d3da1e8500a",
-    "from_address": "7047175424",
-    "from_name": "alice",
-    "to_address": "7209961765",
-    "to_name": "bob",
-    "amount": 5.0,
-    "status": "accepted",
-    "created_at": "2026-08-20T06:16:15Z"
+    "created_at": "2026-08-20T08:21:55Z"
   }
 ]

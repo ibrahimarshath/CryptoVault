@@ -24,7 +24,6 @@ Base58Check encoding; we use a simplified form for clarity).
 
 import hashlib
 from ecdsa import VerifyingKey
-from config import ADDRESS_PREFIX, ADDRESS_HEX_LENGTH
 from crypto.keys import get_public_key_hex
 
 
@@ -45,13 +44,16 @@ def derive_address(public_key: VerifyingKey) -> str:
     # Step 2: SHA-256 hash of the hex string
     digest = hashlib.sha256(pubkey_hex.encode("utf-8")).hexdigest()
 
-    # Step 3 & 4: Convert to int, modulo 10^10, pad to 10 digits
+    # Step 3 & 4: Convert to int, modulo 10^10, pad to 10 digits, prepend CV- prefix
     num = int(digest, 16)
-    return f"{num % (10**10):010d}"
+    return f"CV-{num % (10**10):010d}"
 
 
 def is_valid_address(address: str) -> bool:
     """
-    Validation that an address is exactly 10 digits.
+    Validation that an address starts with 'CV-' and has exactly 10 digits after it.
     """
-    return len(address) == 10 and address.isdigit()
+    if not address.startswith("CV-"):
+        return False
+    body = address[3:]  # strip the 'CV-' prefix
+    return len(body) == 10 and body.isdigit()
