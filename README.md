@@ -24,7 +24,7 @@ Every transaction is **cryptographically signed**, **replay-protected**, and **b
 ## 3. How the System Works
 
 ```
-USER logs in
+USER logs in (by typing username)
     |
     v
 WALLET loads from encrypted .enc file (AES-256-CBC)
@@ -74,7 +74,6 @@ The system is divided into distinct layers, each with a single responsibility:
 | `ledger/`     | Hash-chained ledger, tamper detection              |
 | `payments/`   | End-to-end payment pipeline, request management   |
 | `storage/`    | Atomic JSON file I/O                               |
-| `attacks/`    | Security attack demonstrations                     |
 
 ---
 
@@ -121,9 +120,6 @@ cryptovault/
 |   +-- replay.py            <- NonceTracker (replay protection)
 |   +-- balance.py           <- BalanceManager (double-spend protection)
 |
-+-- attacks/
-|   +-- attack_simulation.py <- 4 attack demonstrations
-|
 +-- data/
     +-- wallets/
     |   +-- alice_wallet.enc  <- AES-encrypted wallet file
@@ -146,7 +142,7 @@ cryptovault/
 | **ECDSA (secp256k1)**      | Signing and verifying transactions                      |
 | **Digital Signatures**     | Every transaction is signed before submission           |
 | **SHA-256**                | Transaction IDs, ledger entry hashes, address derivation|
-| **Avalanche Effect**       | Demonstrated in attack_simulation.py                    |
+| **Avalanche Effect**       | Demonstrated in `crypto/hashing.py`                     |
 | **AES-256-CBC**            | Wallet/private-key storage encryption                   |
 | **PBKDF2-HMAC-SHA256**     | Deriving AES keys from passwords                        |
 | **Hash Chain**             | Tamper-evident ledger (like a blockchain)               |
@@ -330,79 +326,21 @@ pip install -r requirements.txt
 ### Run the main application
 
 ```bash
-cd cryptovault
 python main.py
 ```
 
-You will see the main menu:
+You will see the main login screen:
 ```
-CRYPTOVAULT
-Secure Peer-to-Peer Digital Cash System
-
-1.  Login as Alice
-2.  Login as Bob
-3.  Run Attack Simulations
-4.  Exit
+  --------------------------------------------------
+  Login by typing your username (e.g. Alice, Bob)
+  or type 'exit' to quit.
+  --------------------------------------------------
 ```
 
 ### First run
 
 On first run, wallets are automatically created for Alice and Bob with
 a starting balance of 100 tokens each.
-
----
-
-## 14. How to Run the Attack Simulations
-
-```bash
-cd cryptovault
-python attacks/attack_simulation.py
-```
-
-Or from the main menu: **Option 3 — Run Attack Simulations**
-
-Expected output:
-
-```
-######################################################
-  CRYPTOVAULT -- SECURITY ATTACK SIMULATIONS
-######################################################
-
-======================================================
-  ATTACK 1: REPLAY ATTACK
-======================================================
-  [1] Original transaction:  ACCEPTED
-  [2] Replay attempt:        REJECTED
-  Final Result: (OK) PASS [REPLAY PROTECTION]
-
-======================================================
-  ATTACK 2: OVERSPENDING / DOUBLE-SPEND
-======================================================
-  Alice's balance: 50.00
-  Attempted amount: 200.00
-  Status: REJECTED
-  Final Result: (OK) PASS [BALANCE / DOUBLE-SPEND PROTECTION]
-
-======================================================
-  ATTACK 3: LEDGER TAMPERING
-======================================================
-  Before tampering: Integrity OK
-  After  tampering: INTEGRITY FAILURE at entry #1
-  Final Result: (OK) PASS [LEDGER TAMPERING DETECTION]
-
-======================================================
-  ATTACK 4: SIGNATURE FORGERY
-======================================================
-  Forged signature: REJECTED
-  Final Result: (OK) PASS [SIGNATURE FORGERY PROTECTION]
-
-======================================================
-  BONUS: AVALANCHE EFFECT -- SHA-256
-======================================================
-  "Hello, World!"  -> dffd6021bb2bd5b0af676290809ec3a5...
-  "hello, World!"  -> 04aa5d2533987c34839e8dbc8d8fcac8...
-  (One char change -> completely different hash)
-```
 
 ---
 

@@ -68,5 +68,15 @@
     "amount": 1.0,
     "status": "rejected",
     "created_at": "2026-08-20T03:46:42Z"
+  },
+  {
+    "request_id": "35a050f3-40c3-4dec-b089-e1fb972e4e2b",
+    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
+    "from_name": "Alice",
+    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
+    "to_name": "Bob",
+    "amount": 30,
+    "status": "accepted",
+    "created_at": "2026-08-20T04:24:54Z"
   }
 ]
