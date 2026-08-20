@@ -1,359 +1,167 @@
-# CRYPTOVAULT
-## Terminal-Based Secure Peer-to-Peer Digital Cash System
+# CryptoVault — Minimal Digital Cash System
+
+CryptoVault is a minimal, blockchain-inspired digital cash system built entirely in Python. It demonstrates real cryptographic principles in a working terminal application — ECDSA key pairs, AES-256-CBC wallet encryption, SHA-256 hash chaining, nonce-based replay protection, and a tamper-evident ledger — making it a clear and auditable reference for applied cryptography concepts.
 
 ---
 
-## 1. Project Name
-**CryptoVault** — A terminal-based peer-to-peer digital cash system that demonstrates core cryptographic concepts studied in class.
+## Features
+
+- **secp256k1 ECDSA key generation** — the same elliptic curve used by Bitcoin
+- **Wallet address derivation** — SHA-256 of the public key, modulo-truncated to 10 digits with a `CV-` prefix
+- **AES-256-CBC encrypted wallet storage** — private keys never touch disk in plaintext; PBKDF2-HMAC-SHA256 key derivation with a random salt
+- **Password-protected login with masked input** — passwords echo as `*` using `msvcrt`; wrong passwords are caught at the AES decryption layer
+- **Deterministic transaction serialisation** — field order is fixed so signatures are reproducible across sign and verify
+- **ECDSA transaction signing and verification** — every transaction is signed by the sender's private key and verified before acceptance
+- **Nonce-based replay protection** — each sender nonce is accepted exactly once; replayed transactions are rejected
+- **Balance and double-spend protection** — the balance manager validates every transfer before committing it
+- **SHA-256 hash-chained tamper-evident ledger** — each ledger entry includes the hash of the previous entry; any modification breaks the chain
+- **Attack simulation suite** — five live attack demonstrations with clear output showing each defence in action
 
 ---
 
-## 2. Project Objective
-
-CryptoVault allows two users (Alice and Bob) to:
-- Maintain secure, encrypted digital wallets
-- Send and receive digital tokens
-- Send and respond to payment requests
-- View their complete transaction history
-- Verify the integrity of the transaction ledger
-
-Every transaction is **cryptographically signed**, **replay-protected**, and **balance-validated** before it is accepted into a **hash-chained tamper-evident ledger**.
-
----
-
-## 3. How the System Works
+## Project Structure
 
 ```
-USER logs in (by typing username)
-    |
-    v
-WALLET loads from encrypted .enc file (AES-256-CBC)
-    |
-    v
-USER creates a TRANSACTION (sender, receiver, amount, nonce)
-    |
-    v
-Transaction is serialised DETERMINISTICALLY (fixed field order)
-    |
-    v
-SHA-256 hash of serialised bytes = Transaction ID
-    |
-    v
-Private Key signs the serialised bytes = ECDSA Signature
-    |
-    v
-VALIDATION PIPELINE:
-    [1] Format check
-    [2] Address check
-    [3] Amount check
-    [4] Signature verification  (AUTHENTICITY)
-    [5] Nonce/replay check      (REPLAY PROTECTION)
-    [6] Balance check           (DOUBLE-SPEND PROTECTION)
-    |
-    v (if all pass)
-COMMIT:
-    - Record nonce
-    - Debit sender balance
-    - Credit receiver balance
-    - Append to hash-chained ledger (INTEGRITY)
-    - Re-encrypt and save wallet
-```
-
----
-
-## 4. Architecture
-
-The system is divided into distinct layers, each with a single responsibility:
-
-| Layer         | Responsibility                                     |
-|---------------|----------------------------------------------------|
-| `crypto/`     | Key generation, hashing, signing, AES encryption   |
-| `wallet/`     | Wallet object, address derivation, key management  |
-| `transaction/`| Transaction structure, serialisation, validation   |
-| `security/`   | Replay protection (nonce), balance/double-spend    |
-| `ledger/`     | Hash-chained ledger, tamper detection              |
-| `payments/`   | End-to-end payment pipeline, request management   |
-| `storage/`    | Atomic JSON file I/O                               |
-
----
-
-## 5. Folder Structure
-
-```
-cryptovault/
+CryptoVault/
 |
-+-- main.py                  <- Terminal application entry point
-+-- config.py                <- Global constants and file paths
-+-- requirements.txt         <- Python dependencies
-+-- README.md
-+-- fix_unicode.py           <- Utility (run once to fix terminal encoding)
-|
-+-- crypto/
-|   +-- keys.py              <- ECDSA key-pair generation (secp256k1)
-|   +-- hashing.py           <- SHA-256, transaction IDs, avalanche effect
-|   +-- signatures.py        <- ECDSA sign() and verify()
-|   +-- encryption.py        <- AES-256-CBC + PBKDF2 for wallet storage
-|
-+-- wallet/
-|   +-- wallet.py            <- Wallet dataclass (keys, address, balance, nonce)
-|   +-- wallet_manager.py    <- Create / load / save wallets (AES-encrypted)
-|   +-- address.py           <- Derive wallet address from public key
-|
-+-- transaction/
-|   +-- transaction.py       <- Transaction dataclass
-|   +-- serializer.py        <- Deterministic serialisation (fixed field order)
-|   +-- validator.py         <- 6-stage validation pipeline
-|
-+-- ledger/
-|   +-- block.py             <- LedgerEntry dataclass
-|   +-- ledger.py            <- Append-only hash-chained ledger
-|   +-- integrity.py         <- verify_ledger_integrity()
-|
-+-- payments/
-|   +-- payment.py           <- End-to-end payment orchestration
-|   +-- requests.py          <- PaymentRequest and RequestManager
-|
-+-- storage/
-|   +-- storage.py           <- Atomic JSON load/save helpers
-|
-+-- security/
-|   +-- replay.py            <- NonceTracker (replay protection)
-|   +-- balance.py           <- BalanceManager (double-spend protection)
-|
-+-- data/
-    +-- wallets/
-    |   +-- alice_wallet.enc  <- AES-encrypted wallet file
-    |   +-- bob_wallet.enc    <- AES-encrypted wallet file
-    +-- ledger/
-    |   +-- ledger.json       <- Hash-chained transaction ledger
-    +-- state/
-        +-- nonces.json       <- Used nonces (replay protection)
-        +-- balances.json     <- Current balances
-        +-- requests.json     <- Payment requests
++-- attacks/            # Standalone attack simulation script
++-- crypto/             # Key generation, ECDSA signing, AES encryption, hashing
++-- ledger/             # Ledger append, hash-chain integrity verification
++-- payments/           # End-to-end payment pipeline, payment request manager
++-- security/           # Nonce tracker (replay protection) and balance manager
++-- storage/            # Atomic JSON file persistence helpers
++-- transaction/        # Transaction dataclass, serialiser, validator
++-- wallet/             # Wallet dataclass, address derivation, wallet manager
++-- data/               # Runtime data (auto-created): wallets/, ledger/, state/
++-- config.py           # All global constants and file paths
++-- main.py             # Terminal CLI entry point
++-- requirements.txt    # Python dependencies
++-- test_system.py      # End-to-end integration tests
 ```
 
 ---
 
-## 6. Cryptographic Concepts Used
+## Setup & Installation
 
-| Concept                    | Where Used                                              |
-|----------------------------|---------------------------------------------------------|
-| **Public/Private Keys**    | Each wallet has an ECDSA key pair                       |
-| **ECDSA (secp256k1)**      | Signing and verifying transactions                      |
-| **Digital Signatures**     | Every transaction is signed before submission           |
-| **SHA-256**                | Transaction IDs, ledger entry hashes, address derivation|
-| **Avalanche Effect**       | Demonstrated in `crypto/hashing.py`                     |
-| **AES-256-CBC**            | Wallet/private-key storage encryption                   |
-| **PBKDF2-HMAC-SHA256**     | Deriving AES keys from passwords                        |
-| **Hash Chain**             | Tamper-evident ledger (like a blockchain)               |
-| **Nonce**                  | Replay attack prevention                               |
-| **Balance Tracking**       | Double-spend / overspend prevention                     |
-
----
-
-## 7. Where AUTHENTICITY Is Used
-
-**File:** `crypto/signatures.py`, `transaction/validator.py`
-
-Every transaction includes an ECDSA signature over its serialised fields.
-
-```
-Alice wants to send 20 tokens to Bob:
-  1. Alice serialises the transaction (fixed field order)
-  2. Alice signs the bytes with her PRIVATE KEY
-  3. The signature is attached to the transaction
-
-When the system validates:
-  1. Fetch Alice's PUBLIC KEY from her wallet
-  2. Re-serialise the same fields in the same order
-  3. Call verify_signature(alice_public_key, bytes, signature)
-  4. If valid -> AUTHENTIC (Alice signed this)
-  5. If invalid -> REJECTED
-```
-
-**Question answered:** "Did Alice actually authorise this transaction?"
-
----
-
-## 8. Where INTEGRITY Is Used
-
-**File:** `ledger/integrity.py`, `crypto/signatures.py`
-
-Two layers of integrity protection:
-
-**Layer 1 — Digital Signature:**
-Any modification to a signed transaction makes the signature invalid.
-The verifier catches this during the validation pipeline.
-
-**Layer 2 — Hash Chain:**
-Each ledger entry stores the hash of the previous entry.
-If any transaction is modified after being recorded:
-- Its SHA-256 hash changes
-- The next entry's `previous_hash` no longer matches
-- `verify_ledger_integrity()` detects the mismatch
-
-**Question answered:** "Was any transaction or ledger entry changed after the fact?"
-
----
-
-## 9. Where SECRECY / CONFIDENTIALITY Is Used
-
-**File:** `crypto/encryption.py`, `wallet/wallet_manager.py`
-
-Private keys are **never stored in plaintext**.
-
-```
-Private Key PEM string
-    |
-    v
-AES-256-CBC encrypt (key = PBKDF2(password, random_salt))
-    |
-    v
-Encrypted blob: [16 bytes salt | 16 bytes IV | N bytes ciphertext]
-    |
-    v
-Written to: data/wallets/alice_wallet.enc
-
-To use:
-    Read .enc file
-    |
-    v
-AES-256-CBC decrypt (same password + stored salt)
-    |
-    v
-Private key available in memory for signing
-```
-
-**XOR note:** AES internally uses XOR in every round (AddRoundKey) and
-CBC mode XORs each plaintext block with the previous ciphertext block.
-So XOR is foundational to AES, even though it is not called explicitly.
-
-**MAC/HMAC note:** HMAC provides message authentication but requires
-both parties to share a secret key — it cannot provide non-repudiation.
-Since CryptoVault uses ECDSA digital signatures, HMAC is unnecessary.
-Digital signatures provide all three: authenticity, integrity, AND non-repudiation.
-
-**Question answered:** "Can someone read the private key if they steal the wallet file?"
-
----
-
-## 10. How Replay Protection Works
-
-**File:** `security/replay.py`
-
-Each transaction includes the sender's current **nonce** (sequence number).
-
-```
-Alice's nonce starts at 1.
-
-Transaction 1: nonce = 1  -> ACCEPTED  -> nonce recorded
-Transaction 2: nonce = 2  -> ACCEPTED  -> nonce recorded
-
-Replay attack: re-send Transaction 1 with nonce = 1:
-    NonceTracker.is_replay("alice_address", 1) -> True
-    -> REJECTED: "Nonce 1 has already been used"
-```
-
-Used nonces are persisted to `data/state/nonces.json` so that replays
-are rejected even after the application restarts.
-
----
-
-## 11. How Balance Protection Works
-
-**File:** `security/balance.py`
-
-Balances are tracked independently of the wallet files.
-
-```
-Initial state: Alice = 100, Bob = 100
-
-Alice sends 30:
-    check_sufficient(alice_address, 30) -> OK
-    -> debit(alice_address, 30)   Alice = 70
-    -> credit(bob_address,  30)   Bob   = 130
-
-Alice tries to send 100:
-    check_sufficient(alice_address, 100) -> FAIL
-    -> "Insufficient balance: has 70.00 but tried to send 100.00"
-    -> REJECTED, no balance change
-```
-
-A valid ECDSA signature does NOT bypass the balance check.
-Both checks are **independent and mandatory**.
-
----
-
-## 12. How the Hash Chain Works
-
-**Files:** `ledger/block.py`, `ledger/ledger.py`, `ledger/integrity.py`
-
-```
-GENESIS_HASH = "0000...0000" (64 zeros)
-
-Entry 0:
-  tx_hash      = SHA-256(TX_0_data)
-  previous_hash = GENESIS_HASH
-  entry_hash   = SHA-256(0 + TX_0_data + GENESIS_HASH)
-
-Entry 1:
-  tx_hash      = SHA-256(TX_1_data)
-  previous_hash = Entry_0.entry_hash
-  entry_hash   = SHA-256(1 + TX_1_data + Entry_0.entry_hash)
-
-Entry 2:
-  tx_hash      = SHA-256(TX_2_data)
-  previous_hash = Entry_1.entry_hash
-  entry_hash   = SHA-256(2 + TX_2_data + Entry_1.entry_hash)
-```
-
-If TX_0 is modified:
-- `sha256(TX_0_modified)` != stored `tx_hash` of Entry 0
-- `verify_ledger_integrity()` catches this immediately
-
----
-
-## 13. How to Run the Project
-
-### Prerequisites
+**1. Clone the repository**
 
 ```bash
-# Python 3.12+ required
-# Install dependencies
+git clone https://github.com/your-username/CryptoVault.git
+cd CryptoVault
+```
+
+**2. Create a virtual environment**
+
+```bash
+python -m venv venv
+venv\Scripts\activate      # Windows
+# source venv/bin/activate  # macOS / Linux
+```
+
+**3. Install dependencies**
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Run the main application
+**4. Delete existing data (first run / after password changes)**
+
+```bash
+# Windows
+rmdir /s /q data
+
+# macOS / Linux
+rm -rf data/
+```
+
+**5. Run the application**
 
 ```bash
 python main.py
 ```
 
-You will see the main login screen:
-```
-  --------------------------------------------------
-  Login by typing your username (e.g. Alice, Bob)
-  or type 'exit' to quit.
-  --------------------------------------------------
-```
-
-### First run
-
-On first run, wallets are automatically created for Alice and Bob with
-a starting balance of 100 tokens each.
+The `data/` folder and all wallet files are created automatically on the first login.
 
 ---
 
-## Viva Notes
+## Default Credentials
 
-| Question                               | Answer                                          |
-|----------------------------------------|-------------------------------------------------|
-| What curve does CryptoVault use?        | secp256k1 (same as Bitcoin/Ethereum)            |
-| Why deterministic serialisation?       | Same data must always produce the same bytes for signing/verification |
-| Why AES and not just hashing?          | Hashing is one-way; AES allows decryption with the correct key |
-| Why not use HMAC?                      | HMAC needs a shared secret; ECDSA signatures don't (and give non-repudiation) |
-| Why not Diffie-Hellman?                | DH is for key exchange over insecure channels; this app is local |
-| Why not TLS?                           | TLS is for network communication; this is a local terminal app |
-| How does replay protection work?       | Nonces: each (sender, nonce) pair accepted only once |
-| What is the avalanche effect?          | 1-bit input change causes ~50% output bits to change in SHA-256 |
-| Where is XOR used?                     | Inside AES: AddRoundKey step XORs round key with data; CBC XORs blocks |
+| User  | Password   |
+|-------|------------|
+| alice | @alice2802 |
+| bob   | @bob2837   |
+
+> Passwords are never stored in plaintext. Each wallet is AES-256-CBC encrypted on disk using a PBKDF2-HMAC-SHA256 derived key. A wrong password causes decryption to fail before any wallet data is exposed.
+
+---
+
+## How It Works
+
+### Wallet Creation
+
+When a user logs in for the first time, CryptoVault generates an ECDSA key pair on the secp256k1 curve. The public key is hashed with SHA-256 and the result is modulo-truncated to produce a 10-digit numeric address prefixed with `CV-`. The private key is serialised to PEM format, packed into a wallet dictionary, and AES-256-CBC encrypted with the user's password before being written to disk.
+
+### Sending a Transaction
+
+The sender's wallet is decrypted in memory, a `Transaction` object is built with the sender address, receiver address, amount, and the sender's current nonce. The transaction fields are deterministically serialised and SHA-256 hashed to produce the transaction ID. The sender's private key signs that serialisation, producing an ECDSA signature. The transaction then passes through six validation checks — format, address, amount, signature, nonce, and balance — before balances are updated and the entry is appended to the ledger.
+
+### Ledger Integrity
+
+Every ledger entry stores the SHA-256 hash of its transaction data and the hash of the previous entry, forming a hash chain. Running `verify_ledger_integrity()` recomputes every hash from scratch and checks that the chain links correctly end to end. Modifying any entry — even a single byte — produces a different hash and breaks the chain at that index, immediately exposing the tampering.
+
+### Attack Simulation
+
+The simulation in `attacks/attack_simulation.py` runs five live attacks against the running system and shows the exact error message produced by each defence. It uses only the real system modules — no mocking — so the output reflects genuine cryptographic rejection. All internal system print statements are suppressed so only the attack results are displayed.
+
+---
+
+## Running the Attack Simulation
+
+```bash
+python attacks/attack_simulation.py
+```
+
+| # | Attack | Defence Tested |
+|---|--------|----------------|
+| 1 | **Replay Attack** | Nonce tracking — a resubmitted transaction is rejected |
+| 2 | **Overspend Attack** | Balance validation — spending more than balance is blocked |
+| 3 | **Ledger Tampering** | SHA-256 hash chain — modifying `ledger.json` is detected |
+| 4 | **Forged Signature** | ECDSA verification — Bob's key cannot sign as Alice |
+| 5 | **Negative Amount** | Amount validation — negative transfers are rejected before signing |
+
+> **Note:** Attack 3 saves the original `ledger.json` before tampering and restores it in a `finally` block after the integrity check runs. The main system ledger is left exactly as it was before the attack.
+
+---
+
+## Security Design
+
+| Threat | Defence | Module |
+|--------|---------|--------|
+| Private key theft | AES-256-CBC encryption + PBKDF2 key derivation | `crypto/encryption.py` |
+| Replay attack | Per-sender nonce tracking — each nonce accepted exactly once | `security/replay.py` |
+| Double spend | Balance checked and debited atomically before ledger commit | `security/balance.py` |
+| Ledger tampering | SHA-256 hash chain — any modification breaks the chain | `ledger/integrity.py` |
+| Forged signature | ECDSA signature verified against sender's public key | `crypto/signatures.py` |
+
+---
+
+## Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `ecdsa` | secp256k1 key generation, ECDSA signing and verification |
+| `cryptography` | AES-256-CBC encryption, PBKDF2-HMAC-SHA256 key derivation |
+
+Install with:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Important Notes
+
+- **Always delete `data/`** after changing `ALICE_PASSWORD` or `BOB_PASSWORD` in `config.py`. The wallet `.enc` files were encrypted with the old password and will fail to decrypt otherwise.
+- **The `data/` folder is created automatically** on the first run — you do not need to create it manually.
+- **This is a demonstration system.** It is designed for clarity and auditability, not for production use. Do not use it to store real funds or private keys.

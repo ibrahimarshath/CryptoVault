@@ -28,6 +28,40 @@ are shared singletons -- simulating a shared server/network backend.
 import os
 import sys
 
+import msvcrt
+
+
+def _input_password(prompt: str = "  Password: ") -> str:
+    """
+    Read a password from the terminal, echoing '*' for each character typed.
+
+    Handles:
+      - Printable chars  : append to buffer and print '*'
+      - Backspace        : remove last char and erase last '*'
+      - Enter            : submit
+      - Ctrl+C           : raise KeyboardInterrupt
+    """
+    print(prompt, end="", flush=True)
+    chars = []
+    while True:
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"):          # Enter -- submit
+            print()
+            break
+        elif ch == "\x03":               # Ctrl+C -- cancel
+            print()
+            raise KeyboardInterrupt
+        elif ch in ("\x08", "\x7f"):    # Backspace -- erase last char
+            if chars:
+                chars.pop()
+                # Move cursor back, overwrite '*' with space, move back again
+                print("\b \b", end="", flush=True)
+        elif ch >= " ":                    # Printable character
+            chars.append(ch)
+            print("*", end="", flush=True)
+    return "".join(chars)
+
+
 # -- Path setup ----------------------------------------------------------------
 _DIR = os.path.dirname(os.path.abspath(__file__))
 if _DIR not in sys.path:
@@ -325,7 +359,7 @@ def action_view_requests(
             _ok(f"Accepted -- {selected_req.amount:.2f} tokens sent to {selected_req.from_name}!")
             print(f"  TX-ID       : {tx.tx_id}")
             print(f"  New balance : {balance_mgr.get_balance(wallet.address):.2f}")
-            wallet = load_wallet(wallet.name)
+            wallet = load_wallet(wallet.name, password)
         else:
             _err(f"Payment failed: {msg}")
 
@@ -424,8 +458,36 @@ def action_check_integrity(ledger: Ledger) -> None:
 #  Wallet Dashboard
 # ==============================================================================
 
+
+def action_change_password(wallet: Wallet, current_password: str) -> str:
+    """Prompt for current and new password, re-encrypt wallet if valid."""
+    _section("CHANGE PASSWORD")
+
+    verify_pwd = _input_password("  Current password: ")
+    try:
+        load_wallet(wallet.name, verify_pwd)
+    except (ValueError, FileNotFoundError):
+        _err("Incorrect current password.")
+        _pause()
+        return current_password
+
+    new_pwd     = _input_password("  New password: ")
+    confirm_pwd = _input_password("  Confirm new password: ")
+
+    if new_pwd != confirm_pwd:
+        _err("Passwords do not match.")
+        _pause()
+        return current_password
+
+    save_wallet(wallet, new_pwd)
+    _ok("Password changed successfully.")
+    _pause()
+    return new_pwd
+
+
 def wallet_dashboard(
     user_name: str,
+    password: str,
     balance_mgr: BalanceManager,
     nonce_tracker: NonceTracker,
     ledger: Ledger,
@@ -436,7 +498,7 @@ def wallet_dashboard(
 
     Runs until the user selects "Logout".
     """
-    wallet = load_wallet(user_name)
+    wallet = load_wallet(user_name, password)
     balance_mgr.initialise_if_missing(wallet.address)
 
     while True:
@@ -459,7 +521,8 @@ def wallet_dashboard(
   5.  View My Transactions
   6.  View Wallet Information
   7.  Check Ledger Integrity
-  8.  Logout
+  8.  Change Password
+  9.  Logout
 """)
 
         choice = _ask("Select option")
@@ -488,11 +551,14 @@ def wallet_dashboard(
             action_check_integrity(ledger)
 
         elif choice == "8":
+            password = action_change_password(wallet, password)
+
+        elif choice == "9":
             _info(f"Goodbye, {wallet.name}!")
             break
 
         else:
-            _err("Invalid option -- please enter 1-8.")
+            _err("Invalid option -- please enter 1-9.")
             _pause()
 
 
@@ -525,11 +591,17 @@ def main_menu(
             sys.exit(0)
 
         elif username in ("alice", "bob"):
-            _info(f"Loading {username.capitalize()}'s wallet ...")
+            password = _input_password("  Password: ")
             try:
-                wallet_dashboard(username, balance_mgr, nonce_tracker, ledger, request_mgr)
+                load_wallet(username, password)
+            except (ValueError, FileNotFoundError):
+                _err("Incorrect password. Access denied.")
+                _pause()
+                continue
+            try:
+                wallet_dashboard(username, password, balance_mgr, nonce_tracker, ledger, request_mgr)
             except Exception as e:
-                _err(f"Could not load wallet: {e}")
+                _err(f"Session error: {e}")
                 _pause()
 
         else:

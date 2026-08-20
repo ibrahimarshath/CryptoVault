@@ -45,8 +45,8 @@ AES_BLOCK_SIZE = 16
 # These passwords are used automatically when the demo initialises
 # wallets for Alice and Bob.  In a real product you would collect the
 # password interactively with getpass() and never store it here.
-ALICE_PASSWORD = "alice_secure_pass"
-BOB_PASSWORD   = "bob_secure_pass"
+ALICE_PASSWORD = "@alice2802"
+BOB_PASSWORD   = "@bob2837"
 
 # ---------------------------------------------
 #  File paths
