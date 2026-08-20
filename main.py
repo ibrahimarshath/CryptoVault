@@ -57,7 +57,7 @@ def _banner() -> None:
     print("""
 +==================================================+
 |                                                  |
-|           C I P H E R C A S H                   |
+|          C R Y P T O V A U L T                   |
 |    Secure Peer-to-Peer Digital Cash System       |
 |                                                  |
 |  - ECDSA Signatures  - SHA-256 Hash Chain -      |
@@ -142,9 +142,20 @@ def action_send_money(
     peer = get_peer_wallet(wallet.name)
     current_balance = balance_mgr.get_balance(wallet.address)
 
-    print(f"\n  Your balance   : {current_balance:.2f} tokens")
-    print(f"  Peer address   : {peer.address}")
-    print(f"  Peer name      : {peer.name}")
+    print(f"\n  Your address   : {wallet.address}")
+    print(f"  Your balance   : {current_balance:.2f} tokens")
+    print(f"  (For convenience, {peer.name}'s address is {peer.address})")
+
+    receiver_address = _ask("Enter receiver's 10-digit wallet address (or 0 to cancel)")
+    if receiver_address == "0" or not receiver_address:
+        _info("Send cancelled.")
+        _pause()
+        return wallet
+
+    if receiver_address != peer.address:
+        _err(f"Unknown or invalid receiver address '{receiver_address}'. For this demo, please send to {peer.name}'s address: {peer.address}")
+        _pause()
+        return wallet
 
     amount_str = _ask("Enter amount to send (or 0 to cancel)")
     try:
@@ -159,12 +170,12 @@ def action_send_money(
         _pause()
         return wallet
 
-    print(f"\n  Sending {amount:.2f} tokens to {peer.name} ({peer.address[:20]}...)")
+    print(f"\n  Sending {amount:.2f} tokens to {peer.name} ({peer.address})")
     print("  Signing transaction with your private key ...")
 
     ok, msg, tx = process_payment(
         sender_wallet=wallet,
-        receiver_address=peer.address,
+        receiver_address=receiver_address,
         amount=amount,
         balance_mgr=balance_mgr,
         nonce_tracker=nonce_tracker,
@@ -218,7 +229,19 @@ def action_send_request(
     _section("SEND PAYMENT REQUEST")
 
     peer = get_peer_wallet(wallet.name)
-    print(f"\n  Requesting payment FROM: {peer.name} ({peer.address[:20]}...)")
+    print(f"\n  Your address   : {wallet.address}")
+    print(f"  (For convenience, {peer.name}'s address is {peer.address})")
+
+    payer_address = _ask("Enter payer's 10-digit wallet address (or 0 to cancel)")
+    if payer_address == "0" or not payer_address:
+        _info("Request cancelled.")
+        _pause()
+        return
+
+    if payer_address != peer.address:
+        _err(f"Unknown or invalid address '{payer_address}'. For this demo, please request from {peer.name}'s address: {peer.address}")
+        _pause()
+        return
 
     amount_str = _ask("Enter amount to request (or 0 to cancel)")
     try:
@@ -236,7 +259,7 @@ def action_send_request(
     req = request_mgr.create_request(
         from_address=wallet.address,
         from_name=wallet.name,
-        to_address=peer.address,
+        to_address=payer_address,
         to_name=peer.name,
         amount=amount,
     )

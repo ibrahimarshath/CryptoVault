@@ -187,3 +187,53 @@ def decrypt_wallet(encrypted_bytes: bytes, password: str) -> dict:
     # Step 5: Deserialise JSON -> dict
     print("\n  [DECRYPTION] Wallet data decrypted successfully (AES-256-CBC verified and JSON unpacked).")
     return json.loads(plain_bytes.decode("utf-8"))
+
+
+def encrypt_address(address: str, password: str) -> str:
+    """
+    Encrypt the 10-digit address using AES-256-CBC and return as a hex string.
+    """
+    plaintext_bytes = address.encode("utf-8")
+    padder = sym_padding.PKCS7(AES_BLOCK_SIZE * 8).padder()
+    padded_plaintext = padder.update(plaintext_bytes) + padder.finalize()
+
+    salt = os.urandom(KDF_SALT_LENGTH)
+    iv = os.urandom(AES_BLOCK_SIZE)
+
+    aes_key = _derive_aes_key(password, salt)
+
+    cipher = Cipher(
+        algorithms.AES(aes_key),
+        modes.CBC(iv),
+        backend=default_backend(),
+    )
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
+
+    blob = salt + iv + ciphertext
+    return blob.hex()
+
+
+def decrypt_address(encrypted_hex: str, password: str) -> str:
+    """
+    Decrypt the address hex string back to plaintext.
+    """
+    blob = bytes.fromhex(encrypted_hex)
+    salt = blob[:KDF_SALT_LENGTH]
+    iv = blob[KDF_SALT_LENGTH:KDF_SALT_LENGTH + AES_BLOCK_SIZE]
+    ciphertext = blob[KDF_SALT_LENGTH + AES_BLOCK_SIZE:]
+
+    aes_key = _derive_aes_key(password, salt)
+
+    cipher = Cipher(
+        algorithms.AES(aes_key),
+        modes.CBC(iv),
+        backend=default_backend(),
+    )
+    decryptor = cipher.decryptor()
+    padded_plain = decryptor.update(ciphertext) + decryptor.finalize()
+
+    unpadder = sym_padding.PKCS7(AES_BLOCK_SIZE * 8).unpadder()
+    plain_bytes = unpadder.update(padded_plain) + unpadder.finalize()
+
+    return plain_bytes.decode("utf-8")

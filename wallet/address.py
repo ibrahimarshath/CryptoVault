@@ -30,30 +30,14 @@ from crypto.keys import get_public_key_hex
 
 def derive_address(public_key: VerifyingKey) -> str:
     """
-    Derive a wallet address from an ECDSA public key.
+    Derive a 10-digit wallet address from an ECDSA public key.
 
     Steps
     -----
-    1. Get the compressed-point hex representation of the public key
-       (33 bytes = 66 hex chars, like Bitcoin's compressed pubkey).
+    1. Get the compressed-point hex representation of the public key.
     2. SHA-256 hash that hex string.
-    3. Take the first ADDRESS_HEX_LENGTH characters of the digest.
-    4. Prepend the "CV-" prefix for recognisability.
-
-    Parameters
-    ----------
-    public_key : VerifyingKey -- The ECDSA public key of the wallet.
-
-    Returns
-    -------
-    str : A wallet address, e.g.  "CV-3a7f9b2e1c0d..."
-
-    SECURITY NOTE
-    -------------
-    This is a ONE-WAY derivation:
-      Address -> cannot reverse -> Public Key
-      Address -> cannot reverse -> Private Key
-    The address is safe to share publicly.
+    3. Convert the hash to a large integer and take modulo 10^10 to yield a 10-digit number.
+    4. Format the result as a 10-digit string, left-padded with zeros if needed.
     """
     # Step 1: Compressed-point hex (33 bytes -> 66 hex chars)
     pubkey_hex = get_public_key_hex(public_key)
@@ -61,37 +45,13 @@ def derive_address(public_key: VerifyingKey) -> str:
     # Step 2: SHA-256 hash of the hex string
     digest = hashlib.sha256(pubkey_hex.encode("utf-8")).hexdigest()
 
-    # Step 3: Truncate to ADDRESS_HEX_LENGTH characters
-    short_hash = digest[:ADDRESS_HEX_LENGTH]
-
-    # Step 4: Add prefix
-    return f"{ADDRESS_PREFIX}{short_hash}"
+    # Step 3 & 4: Convert to int, modulo 10^10, pad to 10 digits
+    num = int(digest, 16)
+    return f"{num % (10**10):010d}"
 
 
 def is_valid_address(address: str) -> bool:
     """
-    Basic validation that an address looks like a CryptoVault address.
-
-    A valid address:
-      * Starts with the CV- prefix
-      * Has exactly ADDRESS_HEX_LENGTH hex characters after the prefix
-      * Contains only valid hex characters
-
-    Parameters
-    ----------
-    address : str -- The address string to validate.
-
-    Returns
-    -------
-    bool : True if the address format is valid.
+    Validation that an address is exactly 10 digits.
     """
-    if not address.startswith(ADDRESS_PREFIX):
-        return False
-    body = address[len(ADDRESS_PREFIX):]
-    if len(body) != ADDRESS_HEX_LENGTH:
-        return False
-    try:
-        int(body, 16)   # ensure it's valid hex
-        return True
-    except ValueError:
-        return False
+    return len(address) == 10 and address.isdigit()

@@ -105,12 +105,20 @@ def validate_transaction(
     #
     # A replay attack re-submits a previously accepted, legitimately signed
     # transaction to double-spend or disrupt the system.
-    # The nonce is the defence: each nonce can only be used ONCE per sender.
-    if nonce_tracker.is_replay(tx.sender, tx.nonce):
-        return False, (
-            f"REPLAY ERROR: Nonce {tx.nonce} has already been used by "
-            f"sender {tx.sender[:16]}...  -- replay attack detected."
-        )
+    # The nonce must match the expected next nonce exactly to prevent replay and out-of-order attacks.
+    used_nonces = nonce_tracker.get_used_nonces(tx.sender)
+    expected_nonce = len(used_nonces) + 1
+    if tx.nonce != expected_nonce:
+        if tx.nonce < expected_nonce:
+            return False, (
+                f"REPLAY ERROR: Nonce {tx.nonce} has already been used by "
+                f"sender {tx.sender[:16]}... Expected next nonce: {expected_nonce}."
+            )
+        else:
+            return False, (
+                f"REPLAY ERROR: Invalid future nonce {tx.nonce} for "
+                f"sender {tx.sender[:16]}... Expected next nonce: {expected_nonce}."
+            )
 
     # -- 6. BALANCE CHECK -- DOUBLE-SPEND PROTECTION ---------------------------
     #

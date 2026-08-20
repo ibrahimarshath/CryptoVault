@@ -1,82 +1,22 @@
 [
   {
-    "request_id": "40d692fe-19d3-4523-b5f7-6669555bf407",
-    "from_address": "CC-d8a7d32caf0f289082ca95f5d9ecea56",
+    "request_id": "d2e66d18-9f3c-4dd7-9bfd-2705fe03bf4f",
+    "from_address": "7047175424",
     "from_name": "Alice",
-    "to_address": "CC-d6d0260aef2f9e49d1155de30760487d",
+    "to_address": "7209961765",
     "to_name": "Bob",
     "amount": 30,
     "status": "accepted",
-    "created_at": "2026-08-19T06:29:55Z"
+    "created_at": "2026-08-20T05:22:44Z"
   },
   {
-    "request_id": "e48c03a5-0d73-436c-8328-319fedf050fa",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
+    "request_id": "a90c74af-394b-43be-bd55-5d3da1e8500a",
+    "from_address": "7047175424",
     "from_name": "alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
+    "to_address": "7209961765",
     "to_name": "bob",
-    "amount": 3.0,
-    "status": "rejected",
-    "created_at": "2026-08-19T08:36:39Z"
-  },
-  {
-    "request_id": "548b074e-088e-428f-9284-d06b2976c164",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "from_name": "Alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "to_name": "Bob",
-    "amount": 30,
+    "amount": 5.0,
     "status": "accepted",
-    "created_at": "2026-08-19T14:52:22Z"
-  },
-  {
-    "request_id": "bd357e0f-ce8e-4873-862e-7586dd907d60",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "from_name": "Alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "to_name": "Bob",
-    "amount": 30,
-    "status": "accepted",
-    "created_at": "2026-08-19T14:54:39Z"
-  },
-  {
-    "request_id": "7fb4f634-5279-424c-8ed3-a9a97fb018d2",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "from_name": "alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "to_name": "bob",
-    "amount": 55.0,
-    "status": "accepted",
-    "created_at": "2026-08-19T14:59:21Z"
-  },
-  {
-    "request_id": "0131e60f-e222-421e-81ec-b2832fa292e1",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "from_name": "Alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "to_name": "Bob",
-    "amount": 30,
-    "status": "accepted",
-    "created_at": "2026-08-19T15:43:19Z"
-  },
-  {
-    "request_id": "227624f0-59f8-4987-b166-e3ef173cd530",
-    "from_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "from_name": "bob",
-    "to_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "to_name": "alice",
-    "amount": 1.0,
-    "status": "rejected",
-    "created_at": "2026-08-20T03:46:42Z"
-  },
-  {
-    "request_id": "35a050f3-40c3-4dec-b089-e1fb972e4e2b",
-    "from_address": "CV-d87c18f36db7fcb53006fc519421944b",
-    "from_name": "Alice",
-    "to_address": "CV-10b49fe39f596c33951eb22bef667c01",
-    "to_name": "Bob",
-    "amount": 30,
-    "status": "accepted",
-    "created_at": "2026-08-20T04:24:54Z"
+    "created_at": "2026-08-20T06:16:15Z"
   }
 ]

@@ -47,7 +47,8 @@ from crypto.keys import (
     private_key_to_pem, public_key_to_pem,
     private_key_from_pem, public_key_from_pem,
 )
-from crypto.encryption import encrypt_wallet, decrypt_wallet
+from crypto.encryption import encrypt_wallet, decrypt_wallet, encrypt_address, decrypt_address
+from crypto.hashing import sha256_hex
 from wallet.address import derive_address
 from wallet.wallet import Wallet
 
@@ -105,13 +106,16 @@ def create_wallet(name: str, password: str | None = None) -> Wallet:
     address = derive_address(public_key)
 
     # Step 3: Serialise keys to PEM strings for storage
+    encrypted_address = encrypt_address(address, password)
+    address_hash = sha256_hex(address)
     wallet_dict = {
-        "name":        name,
-        "private_key": private_key_to_pem(private_key),   # SECRET
-        "public_key":  public_key_to_pem(public_key),
-        "address":     address,
-        "balance":     INITIAL_BALANCE,
-        "nonce":       1,
+        "name":              name,
+        "private_key":       private_key_to_pem(private_key),   # SECRET
+        "public_key":        public_key_to_pem(public_key),
+        "encrypted_address": encrypted_address,
+        "address_hash":      address_hash,
+        "balance":           INITIAL_BALANCE,
+        "nonce":             1,
     }
 
     # Step 4 & 5: Encrypt and save to disk
@@ -173,6 +177,14 @@ def load_wallet(name: str, password: str | None = None) -> Wallet:
     # Step 2: Decrypt -- raises ValueError on wrong password
     wallet_dict = decrypt_wallet(encrypted_blob, password)
 
+    # Verify address integrity
+    encrypted_address = wallet_dict["encrypted_address"]
+    address_hash = wallet_dict["address_hash"]
+    decrypted_address = decrypt_address(encrypted_address, password)
+    computed_hash = sha256_hex(decrypted_address)
+    if computed_hash != address_hash:
+        raise ValueError("INTEGRITY FAILURE: Stored wallet address has been tampered with!")
+
     # Step 3: Reconstruct key objects from PEM strings
     private_key = private_key_from_pem(wallet_dict["private_key"])
     public_key  = public_key_from_pem(wallet_dict["public_key"])
@@ -182,7 +194,7 @@ def load_wallet(name: str, password: str | None = None) -> Wallet:
         name=wallet_dict["name"],
         private_key=private_key,
         public_key=public_key,
-        address=wallet_dict["address"],
+        address=decrypted_address,
         balance=wallet_dict["balance"],
         nonce=wallet_dict["nonce"],
     )
@@ -199,13 +211,16 @@ def save_wallet(wallet: Wallet, password: str | None = None) -> None:
     if password is None:
         password = _PASSWORDS.get(wallet.name.lower(), wallet.name + "_pass")
 
+    encrypted_address = encrypt_address(wallet.address, password)
+    address_hash = sha256_hex(wallet.address)
     wallet_dict = {
-        "name":        wallet.name,
-        "private_key": private_key_to_pem(wallet.private_key),
-        "public_key":  public_key_to_pem(wallet.public_key),
-        "address":     wallet.address,
-        "balance":     wallet.balance,
-        "nonce":       wallet.nonce,
+        "name":              wallet.name,
+        "private_key":       private_key_to_pem(wallet.private_key),
+        "public_key":        public_key_to_pem(wallet.public_key),
+        "encrypted_address": encrypted_address,
+        "address_hash":      address_hash,
+        "balance":           wallet.balance,
+        "nonce":             wallet.nonce,
     }
 
     encrypted_blob = encrypt_wallet(wallet_dict, password)
